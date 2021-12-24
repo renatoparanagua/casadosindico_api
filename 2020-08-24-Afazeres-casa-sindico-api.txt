@@ -1,0 +1,142 @@
+* Alterar campos softDelete de data_remocao para o padrão do laravel. --Feito
+* Remover coluna remember_token da tabela de usuario_app. --Feito
+* Ajustar nome da coluna token_notification na tabela usuario_app. --Feito
+* Replicar modelo do Afiliado para o Sindico e Vistoriador. --Feito
+
+* Criar endpoint para usuários não logados mas autenticados pelo app. /init:
+	GET /estados --Feito
+	GET /cidades/estado/<UF> --Feito
+	GET /bairros/cidade/<ID> --Feito
+	GET /rua/bairro/<ID> --Feito
+	GET /rua/bairro/cidade/<ID> --Feito
+	
+	
+
+* Criar endpoints para:
+	POST afiliados/responsavel --Feito
+	PUT afiliados/responsavel --Feito
+	PATCH afiliados/responsavel --Feito
+	DELETE afiliados/responsavel --Feito
+	
+	NOTA:
+	O afiliado só podera alterar o responsavel que é do seu usuario afiliado.
+	Utilizar variável do controller $usuario_tipo_id, 
+	pois ela possui o valor do id da tabela sindico, 
+	quando um sindico realizar o login.
+	
+* Criar endpoints para:	
+	GET /condominios --Feito
+	GET /condominios/<ID> - Este endpoint poderá seracessado por sindico, afiliado e vistoriador --Feito
+	POST /condominios/<ID> --Feito
+	PUT /condominios/<ID> --Feito
+	PATCH /condominios/<ID> --Feito
+	DELETE /condominios/<ID> --Feito
+	
+	NOTA:
+	O sindico só podera alterar condominios que são do seu usuario sindico.
+	Utilizar variável do controller $usuario_tipo_id, 
+	pois ela possui o valor do id da tabela sindico, 
+	quando um sindico realizar o login.
+	
+	As querys que precisa chegar no ELOQUENT são:
+		SELECT * from condominios WHERE $this->usuario_logado->tipo . "_id" = $this->usuario_tipo_id
+		INSERT INTO condominios(..., sindico_id) values(..., $this->usuario_tipo_id)
+		....
+	
+	TESTE 1 - Segurança
+		1) Cadastrar dois usuários sindico. sindico_id:1, sindico_id:2
+		2) Logar como o sindico de 1.
+		3) Criar um condominio enviando o parametro sindico_id=2. 
+		Solução: O insert deverá utilizar o id do usuário da variável citada acima. $this->usuario_logado->tipo . "_id"=$this->usuario_tipo_id
+		
+
+	TESTE 2 - Segurança
+		1) Cadastrar dois usuários sindico. sindico_id:1, sindico_id:2, afiliado_id=1
+		2) Logar como o sindico de 1.
+		3) Criar um condominio. 
+		4) Deslogar da API.
+		5) Logar como o sindico 2 ou afiliado 1.
+		6) DELETE sindicos/condominios/<ID> com o id do condomínio que pertence ao sindico_id=1
+		7) PUT sindicos/condominios/<ID> com o id do condomínio que pertence ao sindico_id=1
+		8) PATCH sindicos/condominios/<ID> com o id do condomínio que pertence ao sindico_id=1
+		Solução: A requisão do select antes do momento da edição, deverá utilizar o sindico_id=$this->usuario_tipo_id
+		$this->class_name::where($this->usuario_logado->tipo . "_id", $this->usuario_tipo_id)->findOrFail($id);
+
+
+
+endpoints para
+		GET * api/orcamentos/condominio/<ID> - todos os orçamentos do condiminio <ID>
+		GET * api/orcamentos/status_sindico/<status> --Feito
+		GET * api/orcamentos/status_afiliado/<status> --Feito
+		GET * api/orcamentos/status_admin/<status> --Feito
+
+		#### Tabela afiliado_orcamento_interesse
+			+------------------+-----------+------+-----+---------------------+-------------------------------+
+			| Field            | Type      | Null | Key | Default             | Extra                         |
+			+------------------+-----------+------+-----+---------------------+-------------------------------+
+			| id               | int(11)   | NO   | PRI | NULL                | auto_increment                |
+			| afiliado_id      | int(11)   | NO   | MUL | NULL                |                               |
+			| orcamento_id     | int(11)   | NO   | MUL | NULL                |                               |
+			| interessado      | int(1)    | NO   |     | 1                   |                               |
+			| data_cadastro    | timestamp | NO   |     | current_timestamp() |                               |
+			| data_atualizacao | timestamp | NO   |     | current_timestamp() | on update current_timestamp() |
+			| nao_interessante | int(1)    | NO   |     | 0                   |                               |
+			| deleted_at       | timestamp | YES  |     | NULL                |                               |
+			+------------------+-----------+------+-----+---------------------+-------------------------------+
+
+		endpoints para
+			GET * api/sindico/afiliado_interesse_orcamento/orcamento/<ID> - Listar com nao_interessante=0 AND interessado=1 --Feito
+					RESPONSE [{AFILIADO}, ...] 
+				
+			PATCH * api/afiliado_interesse_orcamento/<ID> - Edição parcial. --Feito parcialmente
+				*Editar parcialmente o status do afiliado_interesse_orcamento ID
+
+
+endpoints para
+	* POST /vistoriadores/vistorias --Feito
+
+	* PATCH /vistoriadores/vistorias/<ID> --Feito
+	
+	* GET /vistoriadores/vistorias/data_vistoria/<DATE yyyy-mm-dd> --Feito
+
+	* GET api/vistorias/condominio/<ID> --Feito 
+	
+
+AJUSTE NA LIGAÇÃO ENTRE A TABELA REGIAO E BAIRRO. Enviado o modelo ER com a ligação. --Feito
+	- Removido ligação de muitos para muitos.
+	- Bairro recebe a FK de região mas não obrigatório.
+
+endpoints para guard(app)
+	* GET api/regioes - Todas as regiões --Feito
+	* GET api/regioes/estados/<UF> - As regiões de um estado específico --Feito
+	* GET api/regioes/cidades/<cidade> - As regiões de uma cidade específica, fazer com que o ELOQUENTE reconhça a seguinte query: WHERE chave LIKE "%São João%" --Feito
+
+	* GET api/cidades/regiao/<ID> - Todas as cidades da região de id <ID> --Feito
+	* GET api/bairros/regiao/<ID> - Todas os bairros com sua cidade da região de id <ID> --Feito
+
+	* POST api/afiliado_regiao --Feito	
+	* PATCH api/afiliado_regiao --Feito
+
+
+	* GET api/plano_assinatura_afiliado_regiao/regiao/<ID> - Listar os planos dos franqueados da região de id <ID> --Feito
+
+
+1. finalizar o recurso endpoit para --Feito parcialmente
+	* PATCH api/afiliado_regiao
+		Quando a API receber o campo <plano_assinatura_afiliado_regiao_id> > 0 então
+			1. Resgatar os dados da tabela plano_assinatura_afiliado_regiao WHERE id = <plano_assinatura_afiliado_regiao_id>
+			2. Resgatar o TOKEN do asaas da tabela franqueado que estará no campo <token_asaas_debug>.
+				2.1 O franqueado em questão é o franqueado relacionado a região da assinatura na tabela afiliado_regiao
+			3. Criar via API do asaas, uma assinatura avulsa com dados coletados no item 1. com o token coletado no item 2.
+		Resposta esperada: Dados da assinatura do item 1., se houve sucesso no cadastro da API do asaas.
+
+2. Imagens --Feito parcialmente
+Ver a questão do upload de imagem. Ideal seria salvar na pasta do servidor e no banco de dados, salvar o caminho da imagem.
+Se não for muito trabalhoso, salvar em dois tamanhos. thumb e normal.
+Se não der muito trabalho, se a imagem for maior do que 800px de largura ou 800px de altura, redimensionar para a maior parte para 800px.
+	Ex.: Uma imgem de 1600x600 = O servidor deveria salvar uma imagem com resolução 800x300.
+	Ex.: Uma imgem de 600x1600 = O servidor deveria salvar uma imagem com resolução 300x800.
+	Estas funções de imagem são bem comuns no PHP.
+
+3. Arquivos --Feito
+	Ver a questão de realizar o upload de arquivos PDF.

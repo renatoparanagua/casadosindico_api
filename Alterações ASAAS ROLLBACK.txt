@@ -1,0 +1,8 @@
+API
+OK	remove return false do método que criar a assinatura no assas (OrcamentoAfilicadoController@index, Sender de email após store de Orcamento)
+OK	Update plano asaas, se não existir, deixar inadimplente.
+OK	variável autorizadoAsaas no envio de notificações aos afiliados aposo store do contrato
+OK	variável autorizadoAsaas na listagem de orçamentos para os afiliados.
+
+ADMin
+OK	Variável autorizadoAsaas no envio de notificações aos afiliados aposo store e update do contrato
